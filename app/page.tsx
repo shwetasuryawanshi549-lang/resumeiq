@@ -8,6 +8,9 @@ import {
   ChevronRight,
   CircleHelp,
   FileText,
+  MessageCircle,
+  Send,
+  UserRound,
   LockKeyhole,
   RotateCcw,
   Sparkles,
@@ -88,12 +91,45 @@ export default function Page() {
         </div>
       </section>
 
+      <ResumeAssistant />
+
       <footer className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 border-t border-border px-6 py-7 text-xs text-muted-foreground sm:flex-row lg:px-8">
         <div className="flex items-center gap-2"><LockKeyhole size={14} /> Your resume stays on your device</div>
         <div className="flex items-center gap-5"><span>Demo Mode · Local analysis</span><span className="hidden sm:inline">Built for curious careers</span></div>
       </footer>
     </main>
   )
+}
+
+function ResumeAssistant() {
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [messages, setMessages] = useState([
+    { role: 'assistant', text: 'Hi, I’m Querry. Ask me anything about your resume, role matches, or next career move.' },
+  ])
+
+  const suggestions = ['Why am I a strong Data Scientist match?', 'What skill should I learn next?', 'Which companies fit me best?']
+
+  function ask(text = message) {
+    const trimmed = text.trim()
+    if (!trimmed) return
+    const answer = trimmed.toLowerCase().includes('skill')
+      ? 'Your highest-leverage next skill is Spark. It appears across your strongest company matches and complements your Python and SQL foundation.'
+      : trimmed.toLowerCase().includes('company')
+        ? 'Spotify is your strongest demo match at 94%, followed by Notion at 89% and Airbnb at 82%.'
+        : 'Your profile maps most strongly to Data Scientist, with an 87% match. Your Python, SQL, and machine learning experience are doing the heavy lifting.'
+    setMessages((current) => [...current, { role: 'user', text: trimmed }, { role: 'assistant', text: answer }])
+    setMessage('')
+  }
+
+  return <>
+    {open && <section className="fixed bottom-24 right-5 z-30 flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/15" aria-label="Querry ResumeIQ assistant">
+      <div className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground"><div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-lg bg-primary-foreground/15"><Sparkles size={15} /></span><div><p className="text-sm font-semibold">Querry</p><p className="text-[11px] text-primary-foreground/70">ResumeIQ assistant · Demo Mode</p></div></div><button onClick={() => setOpen(false)} className="rounded-md p-1.5 transition hover:bg-primary-foreground/10" aria-label="Close Querry"><X size={16} /></button></div>
+      <div className="max-h-80 space-y-3 overflow-y-auto p-4">{messages.map((item, index) => <div key={`${item.role}-${index}`} className={`flex gap-2 ${item.role === 'user' ? 'justify-end' : ''}`}><span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full ${item.role === 'user' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>{item.role === 'user' ? <UserRound size={13} /> : <Sparkles size={13} />}</span><p className={`max-w-[82%] rounded-xl px-3 py-2 text-sm leading-5 ${item.role === 'user' ? 'bg-muted text-foreground' : 'bg-primary/8 text-foreground'}`}>{item.text}</p></div>)}</div>
+      <div className="border-t border-border p-3"><div className="mb-2 flex flex-wrap gap-1.5">{suggestions.map((suggestion) => <button key={suggestion} onClick={() => ask(suggestion)} className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition hover:border-primary/40 hover:text-primary">{suggestion}</button>)}</div><form onSubmit={(event) => { event.preventDefault(); ask() }} className="flex items-center gap-2"><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Ask Querry anything…" aria-label="Ask Querry" className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /><button type="submit" className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground transition hover:opacity-90" aria-label="Send message"><Send size={15} /></button></form></div>
+    </section>}
+    <button onClick={() => setOpen((current) => !current)} className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:-translate-y-0.5" aria-label="Open Querry assistant"><MessageCircle size={17} /> Querry</button>
+  </>
 }
 
 function Analyzing({ fileName }: { fileName: string }) {
