@@ -104,29 +104,52 @@ export default function Page() {
 function ResumeAssistant() {
   const [open, setOpen] = useState(false)
   const [message, setMessage] = useState('')
+  const [isTyping, setIsTyping] = useState(false)
+  const [showPrompts, setShowPrompts] = useState(false)
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: 'Hi, I’m Querry. Ask me anything about your resume, role matches, or next career move.' },
+    { role: 'assistant', text: 'Hi, I’m Querry. I can answer questions about your resume, role matches, companies, skills, interview prep, and career next steps.' },
   ])
 
-  const suggestions = ['Why am I a strong Data Scientist match?', 'What skill should I learn next?', 'Which companies fit me best?']
+  const suggestions = [
+    'Why am I a strong Data Scientist match?',
+    'What skill should I learn next?',
+    'Which companies fit me best?',
+    'How can I improve my resume?',
+  ]
+
+  function getAnswer(question: string) {
+    const query = question.toLowerCase()
+    if (query.includes('skill') || query.includes('learn') || query.includes('gap')) return 'Your highest-leverage next skill is Spark. It appears across your strongest company matches and complements your Python and SQL foundation. After that, practice A/B testing and production ML workflows.'
+    if (query.includes('company') || query.includes('employer') || query.includes('fit')) return 'Spotify is your strongest demo match at 94%, followed by Notion at 89% and Airbnb at 82%. Spotify values your Python, SQL, and machine learning mix most strongly.'
+    if (query.includes('resume') || query.includes('improve') || query.includes('rewrite')) return 'Your resume has a strong technical foundation. To improve it, add measurable outcomes to each project, lead bullets with action verbs, and mirror keywords like Spark and A/B testing from the target job description.'
+    if (query.includes('interview') || query.includes('prepare') || query.includes('question')) return 'For interviews, prepare a project story using Situation, Action, and Result. Be ready to explain a model tradeoff, a SQL query you optimized, and how you validated a machine learning result.'
+    if (query.includes('salary') || query.includes('pay') || query.includes('compensation')) return 'Compensation depends on location, level, and company. Use your 87% Data Scientist match as leverage, then compare the full package: base salary, equity, bonus, and learning opportunities.'
+    if (query.includes('role') || query.includes('job') || query.includes('career')) return 'Your top role is Data Scientist at 87%, with Machine Learning Engineer at 74% and Data Analyst at 68%. Data Scientist is the best immediate fit; ML Engineer is a strong stretch path.'
+    if (query.includes('hello') || query.includes('hi') || query.includes('help')) return 'I can help with role fit, missing skills, company matches, resume improvements, interview preparation, and career decisions. Try one of the prompt chips below or ask in your own words.'
+    return 'Based on your demo profile, your strongest signal is the combination of Python, SQL, statistics, and machine learning. I can help you explore role fit, skill gaps, target companies, resume improvements, interview prep, or compensation questions.'
+  }
 
   function ask(text = message) {
     const trimmed = text.trim()
-    if (!trimmed) return
-    const answer = trimmed.toLowerCase().includes('skill')
-      ? 'Your highest-leverage next skill is Spark. It appears across your strongest company matches and complements your Python and SQL foundation.'
-      : trimmed.toLowerCase().includes('company')
-        ? 'Spotify is your strongest demo match at 94%, followed by Notion at 89% and Airbnb at 82%.'
-        : 'Your profile maps most strongly to Data Scientist, with an 87% match. Your Python, SQL, and machine learning experience are doing the heavy lifting.'
-    setMessages((current) => [...current, { role: 'user', text: trimmed }, { role: 'assistant', text: answer }])
+    if (!trimmed || isTyping) return
+    setMessages((current) => [...current, { role: 'user', text: trimmed }])
     setMessage('')
+    setIsTyping(true)
+    window.setTimeout(() => {
+      setMessages((current) => [...current, { role: 'assistant', text: getAnswer(trimmed) }])
+      setIsTyping(false)
+    }, 550)
+  }
+
+  function clearChat() {
+    setMessages([{ role: 'assistant', text: 'Chat cleared. What would you like to know about your resume or next career move?' }])
   }
 
   return <>
-    {open && <section className="fixed bottom-24 right-5 z-30 flex w-[min(92vw,380px)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/15" aria-label="Querry ResumeIQ assistant">
-      <div className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground"><div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-lg bg-primary-foreground/15"><Sparkles size={15} /></span><div><p className="text-sm font-semibold">Querry</p><p className="text-[11px] text-primary-foreground/70">ResumeIQ assistant · Demo Mode</p></div></div><button onClick={() => setOpen(false)} className="rounded-md p-1.5 transition hover:bg-primary-foreground/10" aria-label="Close Querry"><X size={16} /></button></div>
-      <div className="max-h-80 space-y-3 overflow-y-auto p-4">{messages.map((item, index) => <div key={`${item.role}-${index}`} className={`flex gap-2 ${item.role === 'user' ? 'justify-end' : ''}`}><span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full ${item.role === 'user' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>{item.role === 'user' ? <UserRound size={13} /> : <Sparkles size={13} />}</span><p className={`max-w-[82%] rounded-xl px-3 py-2 text-sm leading-5 ${item.role === 'user' ? 'bg-muted text-foreground' : 'bg-primary/8 text-foreground'}`}>{item.text}</p></div>)}</div>
-      <div className="border-t border-border p-3"><div className="mb-2 flex flex-wrap gap-1.5">{suggestions.map((suggestion) => <button key={suggestion} onClick={() => ask(suggestion)} className="rounded-full border border-border px-2.5 py-1 text-[11px] text-muted-foreground transition hover:border-primary/40 hover:text-primary">{suggestion}</button>)}</div><form onSubmit={(event) => { event.preventDefault(); ask() }} className="flex items-center gap-2"><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Ask Querry anything…" aria-label="Ask Querry" className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /><button type="submit" className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground transition hover:opacity-90" aria-label="Send message"><Send size={15} /></button></form></div>
+    {open && <section className="fixed bottom-24 right-5 z-30 flex w-[min(92vw,400px)] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-2xl shadow-primary/15" aria-label="Querry ResumeIQ assistant">
+      <div className="flex items-center justify-between bg-primary px-4 py-3 text-primary-foreground"><div className="flex items-center gap-2"><span className="grid size-8 place-items-center rounded-lg bg-primary-foreground/15"><Sparkles size={15} /></span><div><p className="text-sm font-semibold">Querry</p><p className="text-[11px] text-primary-foreground/70">ResumeIQ assistant · Demo Mode</p></div></div><div className="flex items-center gap-1"><button onClick={clearChat} className="rounded-md px-2 py-1 text-[11px] text-primary-foreground/75 transition hover:bg-primary-foreground/10 hover:text-primary-foreground">Clear</button><button onClick={() => setOpen(false)} className="rounded-md p-1.5 transition hover:bg-primary-foreground/10" aria-label="Close Querry"><X size={16} /></button></div></div>
+      <div className="max-h-80 space-y-3 overflow-y-auto p-4">{messages.map((item, index) => <div key={`${item.role}-${index}`} className={`flex gap-2 ${item.role === 'user' ? 'justify-end' : ''}`}><span className={`mt-0.5 grid size-6 shrink-0 place-items-center rounded-full ${item.role === 'user' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary'}`}>{item.role === 'user' ? <UserRound size={13} /> : <Sparkles size={13} />}</span><p className={`max-w-[84%] rounded-xl px-3 py-2 text-sm leading-5 ${item.role === 'user' ? 'bg-muted text-foreground' : 'bg-primary/8 text-foreground'}`}>{item.text}</p></div>)}{isTyping && <div className="flex items-center gap-2 text-xs text-muted-foreground"><span className="grid size-6 place-items-center rounded-full bg-primary/10 text-primary"><Sparkles size={13} /></span><span className="animate-pulse">Querry is thinking…</span></div>}</div>
+      <div className="border-t border-border p-3"><button onClick={() => setShowPrompts((current) => !current)} className="mb-2 inline-flex items-center gap-1 text-[11px] font-medium text-primary">{showPrompts ? 'Hide prompts' : 'Explore questions'} <ChevronRight size={13} className={showPrompts ? 'rotate-90' : ''} /></button>{showPrompts && <div className="mb-2 flex flex-wrap gap-1.5">{suggestions.map((suggestion) => <button key={suggestion} onClick={() => ask(suggestion)} className="rounded-full border border-border px-2.5 py-1 text-left text-[11px] text-muted-foreground transition hover:border-primary/40 hover:text-primary">{suggestion}</button>)}</div>}<form onSubmit={(event) => { event.preventDefault(); ask() }} className="flex items-center gap-2"><input value={message} onChange={(event) => setMessage(event.target.value)} placeholder="Ask Querry anything…" aria-label="Ask Querry" className="min-w-0 flex-1 rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring" /><button type="submit" disabled={isTyping} className="grid size-9 shrink-0 place-items-center rounded-lg bg-primary text-primary-foreground transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50" aria-label="Send message"><Send size={15} /></button></form><p className="mt-2 text-[10px] text-muted-foreground">Demo responses are based on your sample analysis.</p></div>
     </section>}
     <button onClick={() => setOpen((current) => !current)} className="fixed bottom-5 right-5 z-30 inline-flex items-center gap-2 rounded-full bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-lg shadow-primary/25 transition hover:-translate-y-0.5" aria-label="Open Querry assistant"><MessageCircle size={17} /> Querry</button>
   </>
